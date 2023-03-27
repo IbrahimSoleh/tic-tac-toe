@@ -1,73 +1,143 @@
+import * as React from "react";
+import {Provider, useDispatch, useSelector } from "react-redux";
+import {configureStore, createSlice } from "@reduxjs/toolkit";
+import {Box, Button, ChakraProvider, Flex, Text, VStack } from '@chakra-ui/react';
 
-import * as React from 'react';
+let data = createSlice({
+  name: "data",
+  initialState: {
+    currentStep: 0,
+    winner: null,
+    nextValue: "X",
+    status: "Next Player: X",
+    squares: Array(9).fill(null),
+  },
+  reducers: {
+    selectSquare(state, action) {
+      if (!state.winner && !state.squares[action.payload]) {
+        const newSquares = [...state.squares];
+        newSquares[action.payload] = calculateNextValue(state.squares);
+        const winner = calculateWinner(newSquares);
+        const nextValue = calculateNextValue(newSquares);
+        const status = calculateStatus(winner, newSquares, nextValue);
+        return {
+          squares: newSquares,
+          winner,
+          nextValue,
+          status,
+        };
+      }
+    },
+    restart() {
+      const newSquares = Array(9).fill(null);
+      const winner = calculateWinner(newSquares);
+      const nextValue = calculateNextValue(newSquares);
+      const status = calculateStatus(winner, newSquares, nextValue);
+      return {
+        squares: newSquares,
+        winner,
+        nextValue,
+        status,
+      };
+    },
+  },
+});
 
+export const { selectSquare, restart, jumpToMove } = data.actions;
+
+const store = configureStore({
+  reducer: data.reducer,
+});
 function Board() {
-  const squares = Array(9).fill(null);
-  function selectSquare(square) {
+  const { status, squares } = useSelector((state) => state);
+  const dispatch = useDispatch();
+  function selectSquareHandler(squareIndex) {
+    dispatch(selectSquare(squareIndex));
+  };
 
-  }
-
-  function restart() {
-  }
+  // const nextValue = calculateNextValue(squares)
+  // const winner = calculateWinner(squares)
+  // const status = calculateStatus(winner, squares, nextValue)
 
   function renderSquare(i) {
     return (
-      <button className="square" onClick={() => selectSquare(i)}>
+      <Button 
+      w='100px'
+      h='100px'
+      variant='outlined'
+      borderWidth='2px'
+      borderStyle='solid'
+      borderColor='white'
+      m='1'
+      onClick={() => selectSquareHandler(i)}
+      >
         {squares[i]}
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div>
-      <div >STATUS</div>
-      <div >
+    <VStack>
+      <Text color='white' fontWeight='bold'>{status}</Text>
+      <Flex className='board-row'>
         {renderSquare(0)}
         {renderSquare(1)}
         {renderSquare(2)}
-      </div>
-      <div >
+      </Flex>
+      <Flex className='board-row'>
         {renderSquare(3)}
         {renderSquare(4)}
         {renderSquare(5)}
-      </div>
-      <div >
+      </Flex>
+      <Flex>
         {renderSquare(6)}
         {renderSquare(7)}
         {renderSquare(8)}
-      </div>
-      <button onClick={restart}>
-        restart
-      </button>
-    </div>
+      </Flex>
+    </VStack>
   );
 }
 
 function Game() {
+  const dispatch = useDispatch();
+  const handlerRestart = () => {
+    dispatch(restart());
+  };
   return (
-    <div >
-      <div >
+    <Box bgGradient='linear(to-t, blue.300, blue.100, blue.300)' p={10}>
+      <Box maxW='500px' mx='auto'  p={4} borderRadius='lg'>
         <Board />
-      </div>
-    </div>
+       <Flex pt='2'>
+       <Button
+          onClick={handlerRestart}
+          className='restart'
+          fontWeight='bold'
+          color='blackAlpha.400'
+          variant='outline'
+          size='md'
+          mx='auto'
+          p='5'
+        >
+          Restart
+        </Button>
+       </Flex>
+      </Box>
+    </Box>
   );
 }
 
-// eslint-disable-next-line no-unused-vars
 function calculateStatus(winner, squares, nextValue) {
   return winner
     ? `Winner: ${winner}`
     : squares.every(Boolean)
-      ? `Scratch: Cat's game`
-      : `Next player: ${nextValue}`;
+    ? `Scratch: Cat's game`
+    : `Next player: ${nextValue}`;
 }
 
-// eslint-disable-next-line no-unused-vars
 function calculateNextValue(squares) {
-  return squares.filter(Boolean).length % 2 === 0 ? 'X' : 'O';
+  return squares.filter(Boolean).length % 2 === 0 ? "X" : "O";
 }
 
-// eslint-disable-next-line no-unused-vars
 function calculateWinner(squares) {
   const lines = [
     [0, 1, 2],
@@ -89,7 +159,13 @@ function calculateWinner(squares) {
 }
 
 function App() {
-  return <Game />;
+  return(
+  <ChakraProvider>
+    <Provider store={store}>
+<Game />;
+    </Provider>
+  </ChakraProvider>
+  )
 }
 
 export default App;
